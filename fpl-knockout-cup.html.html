@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knockout Cup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pitch:#132A20;
+    --pitch-deep:#0C1E17;
+    --chalk:#F3F1E9;
+    --amber:#E8A33D;
+    --amber-dim:#8A6224;
+    --ink:#101614;
+    --line:#2C463A;
+    --red:#B5453A;
+    --muted:#9FB0A6;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--pitch-deep);
+    color:var(--chalk);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 80px;}
+
+  /* header */
+  header{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    padding-bottom:22px;border-bottom:1px solid var(--line);margin-bottom:22px;
+    gap:16px;
+  }
+  h1{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    font-size:clamp(28px,5vw,42px);
+    letter-spacing:0.5px;
+    margin:0;
+    line-height:1;
+  }
+  header p.sub{margin:8px 0 0;color:var(--muted);font-size:14px;max-width:46ch;}
+  .gear{
+    background:none;border:1px solid var(--line);color:var(--chalk);
+    width:40px;height:40px;border-radius:50%;cursor:pointer;flex-shrink:0;
+    font-size:16px;display:flex;align-items:center;justify-content:center;
+    transition:border-color .15s ease;
+  }
+  .gear:hover{border-color:var(--amber);}
+
+  /* settings drawer */
+  .drawer{
+    background:var(--pitch);border:1px solid var(--line);border-radius:4px;
+    padding:20px;margin-bottom:26px;display:none;
+  }
+  .drawer.open{display:block;}
+  .drawer h3{margin:0 0 14px;font-family:'Oswald',sans-serif;font-size:16px;font-weight:600;color:var(--amber);}
+  .drawer-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  @media(max-width:620px){.drawer-grid{grid-template-columns:1fr;}}
+  .field{margin-bottom:10px;}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;}
+  .field input{
+    width:100%;padding:9px 10px;background:var(--ink);border:1px solid var(--line);
+    color:var(--chalk);border-radius:3px;font-size:14px;font-family:'Inter',sans-serif;
+  }
+  .field input:focus{outline:none;border-color:var(--amber);}
+  .field small{display:block;margin-top:4px;color:var(--muted);font-size:11px;}
+  .btn{
+    background:var(--amber);color:var(--ink);border:none;padding:10px 18px;
+    border-radius:3px;font-weight:600;font-size:13px;cursor:pointer;
+    font-family:'Inter',sans-serif;margin-top:6px;
+  }
+  .btn:hover{background:#f0b158;}
+  .btn.secondary{background:none;border:1px solid var(--line);color:var(--chalk);}
+  .btn.secondary:hover{border-color:var(--amber);color:var(--amber);}
+  .btn:disabled{opacity:.5;cursor:default;}
+
+  /* tabs */
+  .tabs{display:flex;gap:6px;margin-bottom:20px;}
+  .tab{
+    padding:9px 18px;border:1px solid var(--line);background:none;color:var(--muted);
+    cursor:pointer;font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:.3px;
+    border-radius:3px;
+  }
+  .tab.active{background:var(--pitch);border-color:var(--amber);color:var(--chalk);}
+
+  /* status bar */
+  .statusbar{
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
+    font-size:12px;color:var(--muted);margin-bottom:22px;
+  }
+  .statusbar .refresh{display:flex;align-items:center;gap:10px;}
+
+  /* empty state */
+  .empty{
+    border:1px dashed var(--line);border-radius:4px;padding:40px 24px;text-align:center;color:var(--muted);
+  }
+  .empty strong{color:var(--chalk);display:block;margin-bottom:6px;font-family:'Oswald',sans-serif;font-size:18px;font-weight:500;}
+
+  .error{
+    border:1px solid var(--red);background:rgba(181,69,58,.12);color:#f0c4bf;
+    padding:14px 16px;border-radius:3px;font-size:13px;margin-bottom:18px;
+  }
+
+  /* qualifying table */
+  .section-title{
+    font-family:'Oswald',sans-serif;font-weight:600;font-size:13px;letter-spacing:.5px;
+    color:var(--amber);margin:0 0 12px;text-transform:uppercase;
+  }
+  .qual{margin-bottom:38px;}
+  .qual-note{font-size:12px;color:var(--muted);margin-bottom:12px;}
+  table.qtable{width:100%;border-collapse:collapse;font-size:14px;}
+  table.qtable th{
+    text-align:left;font-size:11px;color:var(--muted);font-weight:500;
+    padding:6px 8px;border-bottom:1px solid var(--line);text-transform:uppercase;letter-spacing:.4px;
+  }
+  table.qtable td{padding:8px;border-bottom:1px solid rgba(44,70,58,.5);}
+  table.qtable tr:last-child td{border-bottom:none;}
+  .seed-num{
+    font-family:'Oswald',sans-serif;color:var(--amber);width:24px;display:inline-block;
+  }
+
+  /* bracket */
+  .bracket-scroll{overflow-x:auto;padding-bottom:10px;}
+  .bracket{display:flex;gap:26px;min-width:900px;}
+  .round-col{flex:1;min-width:200px;}
+  .round-head{
+    margin-bottom:14px;
+  }
+  .round-head .rname{font-family:'Oswald',sans-serif;font-weight:600;font-size:15px;}
+  .round-head .rstatus{font-size:11px;color:var(--muted);margin-top:2px;}
+  .round-head .rstatus.live{color:var(--amber);}
+  .matches{display:flex;flex-direction:column;justify-content:space-around;height:100%;gap:16px;}
+  .match{
+    background:var(--pitch);border:1px solid var(--line);border-radius:3px;position:relative;overflow:hidden;
+  }
+  .match::before{
+    content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--line);
+  }
+  .match.decided::before{background:var(--amber);}
+  .row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:9px 12px;font-size:13px;border-bottom:1px solid rgba(44,70,58,.6);
+  }
+  .row:last-child{border-bottom:none;}
+  .row.winner{color:var(--chalk);font-weight:600;}
+  .row.loser{color:var(--muted);}
+  .row.bye{color:var(--muted);font-style:italic;}
+  .row .pts{font-family:'Oswald',sans-serif;font-size:14px;}
+  .row .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:10px;}
+  .champion-banner{
+    background:linear-gradient(90deg,rgba(232,163,61,.15),transparent);
+    border:1px solid var(--amber);border-radius:4px;padding:18px 20px;margin-bottom:26px;
+    display:flex;align-items:center;gap:14px;
+  }
+  .champion-banner .trophy{font-size:26px;}
+  .champion-banner .ctext .clabel{font-size:11px;color:var(--amber);text-transform:uppercase;letter-spacing:.5px;}
+  .champion-banner .ctext .cname{font-family:'Oswald',sans-serif;font-size:20px;font-weight:600;}
+
+  .format-note{
+    font-size:12px;color:var(--muted);margin-top:32px;border-top:1px solid var(--line);padding-top:16px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Knockout Cup</h1>
+      <p class="sub">Two leagues of 14. One gameweek settles each round, right through to the Final on GW38.</p>
+    </div>
+    <button class="gear" id="gearBtn" title="Settings">&#9881;</button>
+  </header>
+
+  <div class="drawer" id="drawer">
+    <h3>League setup</h3>
+    <div class="drawer-grid">
+      <div>
+        <div class="field">
+          <label>League A name</label>
+          <input type="text" id="nameA" placeholder="e.g. Group A">
+        </div>
+        <div class="field">
+          <label>League A — FPL league ID</label>
+          <input type="text" id="idA" placeholder="e.g. 314159" inputmode="numeric">
+          <small>Find it in the league's URL: fantasy.premierleague.com/leagues/&lt;ID&gt;/...</small>
+        </div>
+        <div class="field">
+          <label>League A type</label>
+          <select id="typeA">
+            <option value="h2h">Head-to-head league</option>
+            <option value="classic">Classic league</option>
+          </select>
+          <small>Check the URL — "/standings/c" is classic, "/matches/h" is head-to-head.</small>
+        </div>
+      </div>
+      <div>
+        <div class="field">
+          <label>League B name</label>
+          <input type="text" id="nameB" placeholder="e.g. Group B">
+        </div>
+        <div class="field">
+          <label>League B — FPL league ID</label>
+          <input type="text" id="idB" placeholder="e.g. 271828" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label>League B type</label>
+          <select id="typeB">
+            <option value="h2h">Head-to-head league</option>
+            <option value="classic">Classic league</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <button class="btn" id="saveBtn">Save & load</button>
+    <button class="btn secondary" id="closeBtn" style="margin-left:8px;">Close</button>
+    <p style="font-size:11px;color:var(--muted);margin-top:14px;">Note: your combined 28-manager classic league (1307897) isn't used here — this bracket runs independently within each group of 14.</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-league="A" id="tabA">League A</button>
+    <button class="tab" data-league="B" id="tabB">League B</button>
+  </div>
+
+  <div id="content"></div>
+
+  <div class="format-note">
+    <strong style="color:var(--chalk);">Format:</strong> Qualifying (GW1–3 combined points) seeds all 14 entries 1–14. Seeds 1 &amp; 2 receive a bye into the Quarter-Final; seeds 3–14 are drawn in a standard bracket (3v14, 4v13, 5v12, 6v11, 7v10, 8v9). Round of 14 is decided on GW11, Quarter-Final on GW19, Semi-Final on GW27, and the Final on GW38 — each round a single gameweek's score. Ties are broken by qualifying seed.
+  </div>
+
+</div>
+
+<script>
+const PROXIES = [
+  url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+  url => 'https://corsproxy.io/?url=' + encodeURIComponent(url),
+  url => 'https://thingproxy.freeboard.io/fetch/' + url,
+];
+const FPL = 'https://fantasy.premierleague.com/api';
+const ROUNDS = [
+  { id:'r1',   label:'Round of 14',   gw:11 },
+  { id:'qf',   label:'Quarter-Final', gw:19 },
+  { id:'sf',   label:'Semi-Final',    gw:27 },
+  { id:'final',label:'Final',         gw:38 },
+];
+const QUAL_GWS = [1,2,3];
+// classic 16-slot seed order; 15 & 16 map to BYE since we only have 14 real seeds
+const SLOT_ORDER = [1,16,8,9,4,13,5,12,2,15,7,10,3,14,6,11];
+const BYE = { id:'BYE', name:'Bye', isBye:true };
+
+let config = {
+  A:{ id:'1307844', name:'Group A', type:'h2h' },
+  B:{ id:'1741490', name:'Group B', type:'h2h' }
+};
+let cache = { A:null, B:null };
+let activeLeague = 'A';
+let bootstrapEvents = null;
+
+async function fetchWithTimeout(url, ms){
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), ms);
+  try{
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(t);
+    return res;
+  }catch(e){
+    clearTimeout(t);
+    throw e;
+  }
+}
+
+async function fetchJSON(apiPath){
+  // 1. Try your own Netlify function first (same-origin, no CORS involved)
+  try{
+    const res = await fetchWithTimeout('/.netlify/functions/fpl-proxy?path=' + encodeURIComponent(apiPath), 12000);
+    if(res.ok) return await res.json();
+  }catch(e){ /* function not deployed here, or failed — fall through */ }
+
+  // 2. Fall back to public CORS proxies
+  const fullUrl = FPL + apiPath;
+  let lastErr;
+  for(const buildProxyUrl of PROXIES){
+    try{
+      const res = await fetchWithTimeout(buildProxyUrl(fullUrl), 12000);
+      if(!res.ok){ lastErr = new Error('Request failed: ' + res.status); continue; }
+      return await res.json();
+    }catch(e){
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error('All proxies failed');
+}
+
+async function fetchAllWithLimit(items, worker, limit){
+  const results = new Array(items.length);
+  let i = 0;
+  async function runNext(){
+    while(i < items.length){
+      const idx = i++;
+      results[idx] = await worker(items[idx], idx);
+    }
+  }
+  const runners = Array.from({length: Math.min(limit, items.length)}, runNext);
+  await Promise.all(runners);
+  return results;
+}
+
+async function loadConfig(){
+  try{
+    const r = await window.storage.get('ko-config');
+    if(r && r.value) config = JSON.parse(r.value);
+  }catch(e){ /* no config yet */ }
+  document.getElementById('nameA').value = config.A.name || '';
+  document.getElementById('idA').value = config.A.id || '';
+  document.getElementById('typeA').value = config.A.type || 'h2h';
+  document.getElementById('nameB').value = config.B.name || '';
+  document.getElementById('idB').value = config.B.id || '';
+  document.getElementById('typeB').value = config.B.type || 'h2h';
+  document.getElementById('tabA').textContent = config.A.name || 'League A';
+  document.getElementById('tabB').textContent = config.B.name || 'League B';
+}
+
+async function saveConfig(){
+  config.A.name = document.getElementById('nameA').value.trim() || 'League A';
+  config.A.id = document.getElementById('idA').value.trim();
+  config.A.type = document.getElementById('typeA').value;
+  config.B.name = document.getElementById('nameB').value.trim() || 'League B';
+  config.B.id = document.getElementById('idB').value.trim();
+  config.B.type = document.getElementById('typeB').value;
+  await window.storage.set('ko-config', JSON.stringify(config));
+  document.getElementById('tabA').textContent = config.A.name;
+  document.getElementById('tabB').textContent = config.B.name;
+  document.getElementById('drawer').classList.remove('open');
+  cache[activeLeague] = null;
+  render();
+}
+
+async function loadCacheFor(key){
+  try{
+    const r = await window.storage.get('ko-cache-' + key);
+    if(r && r.value) return JSON.parse(r.value);
+  }catch(e){}
+  return null;
+}
+async function saveCacheFor(key, data){
+  await window.storage.set('ko-cache-' + key, JSON.stringify(data));
+}
+
+async function ensureBootstrap(){
+  if(bootstrapEvents) return bootstrapEvents;
+  const data = await fetchJSON('/bootstrap-static/');
+  bootstrapEvents = data.events;
+  return bootstrapEvents;
+}
+
+function isGwFinished(gw){
+  if(!bootstrapEvents) return false;
+  const ev = bootstrapEvents.find(e => e.id === gw);
+  return ev ? !!ev.finished : false;
+}
+function currentGw(){
+  if(!bootstrapEvents) return null;
+  const cur = bootstrapEvents.find(e => e.is_current);
+  if(cur) return cur.id;
+  const next = bootstrapEvents.find(e => e.is_next);
+  return next ? next.id - 1 : null;
+}
+
+async function loadLeague(leagueKey, forceRefresh){
+  const id = config[leagueKey].id;
+  if(!id) return null;
+  if(!forceRefresh){
+    const c = await loadCacheFor(leagueKey);
+    if(c && c.leagueId === id) return c;
+  }
+  await ensureBootstrap();
+  const type = config[leagueKey].type === 'classic' ? 'leagues-classic' : 'leagues-h2h';
+  const standings = await fetchJSON('/' + type + '/' + id + '/standings/');
+  const entries = (standings.standings && standings.standings.results) || [];
+  const managers = await fetchAllWithLimit(entries, async (e) => {
+    const hist = await fetchJSON('/entry/' + e.entry + '/history/');
+    const byGw = {};
+    (hist.current || []).forEach(h => { byGw[h.event] = h.points; });
+    return { id:e.entry, name:e.player_name, team:e.entry_name, byGw };
+  }, 5);
+  const data = { leagueId:id, managers, fetchedAt: Date.now() };
+  await saveCacheFor(leagueKey, data);
+  return data;
+}
+
+function computeQualifying(managers){
+  return managers.map(m => {
+    let total = 0;
+    QUAL_GWS.forEach(g => { total += (m.byGw[g] || 0); });
+    return { ...m, qualTotal: total };
+  }).sort((a,b) => b.qualTotal - a.qualTotal);
+}
+
+function slotPlayer(seeded, slotNum){
+  if(slotNum > seeded.length) return BYE;
+  return seeded[slotNum - 1];
+}
+
+function decideMatch(pA, pB, gw){
+  if(pA.isBye && pB.isBye) return { winner: BYE, decided:true, scoreA:null, scoreB:null };
+  if(pA.isBye) return { winner: pB, decided:true, scoreA:null, scoreB:null, auto:true };
+  if(pB.isBye) return { winner: pA, decided:true, scoreA:null, scoreB:null, auto:true };
+  const finished = isGwFinished(gw);
+  const scoreA = pA.byGw ? pA.byGw[gw] : undefined;
+  const scoreB = pB.byGw ? pB.byGw[gw] : undefined;
+  if(!finished || scoreA === undefined || scoreB === undefined){
+    return { winner:null, decided:false, scoreA, scoreB };
+  }
+  let winner;
+  if(scoreA > scoreB) winner = pA;
+  else if(scoreB > scoreA) winner = pB;
+  else winner = (pA.seed < pB.seed) ? pA : pB; // tie-break: better qualifying seed
+  return { winner, decided:true, scoreA, scoreB };
+}
+
+function buildBracket(seededList){
+  const seeded = seededList.map((m,i) => ({ ...m, seed:i+1 }));
+  let currentSlots = SLOT_ORDER.map(n => slotPlayer(seeded, n));
+  const rounds = [];
+  for(const r of ROUNDS){
+    const matches = [];
+    for(let i=0;i<currentSlots.length;i+=2){
+      const pA = currentSlots[i], pB = currentSlots[i+1];
+      const result = decideMatch(pA,pB,r.gw);
+      matches.push({ pA, pB, gw:r.gw, ...result });
+    }
+    rounds.push({ ...r, matches });
+    currentSlots = matches.map(m => m.winner || { id:'TBD', name:'TBD', isTbd:true });
+  }
+  return rounds;
+}
+
+function fmtTime(ts){
+  if(!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+function renderPersonRow(p, result, side){
+  if(!p) return '<div class="row"><span class="name">TBD</span></div>';
+  if(p.isBye) return '<div class="row bye"><span class="name">Bye</span></div>';
+  if(p.isTbd) return '<div class="row"><span class="name">TBD</span></div>';
+  const score = side==='A' ? result.scoreA : result.scoreB;
+  const isWinner = result.winner && result.winner.id === p.id;
+  const cls = result.decided ? (isWinner ? 'winner':'loser') : '';
+  const scoreDisplay = result.auto ? '—' : (score === undefined || score === null ? '–' : score);
+  return `<div class="row ${cls}">
+    <span class="name">${p.name}${p.seed ? ' <span style=\"color:var(--muted);font-size:11px;\">(#'+p.seed+')</span>' : ''}</span>
+    <span class="pts">${scoreDisplay}</span>
+  </div>`;
+}
+
+function renderLeague(container, key){
+  const data = cache[key];
+  if(!config[key].id){
+    container.innerHTML = `<div class="empty"><strong>No league connected yet</strong>Open settings and add ${config[key].name}'s FPL classic league ID to pull live standings.</div>`;
+    return;
+  }
+  if(!data){
+    container.innerHTML = `<div class="empty"><strong>Loading ${config[key].name}…</strong>Fetching standings and history from the FPL API.</div>`;
+    return;
+  }
+  if(data.error){
+    container.innerHTML = `<div class="error">Couldn't load this league: ${data.error}. Check the league ID and try refreshing.</div>
+      <button class="btn secondary" id="retryBtn">Retry</button>`;
+    document.getElementById('retryBtn').addEventListener('click', async () => {
+      container.innerHTML = `<div class="empty"><strong>Retrying…</strong></div>`;
+      cache[key] = await safeLoad(key, true);
+      render();
+    });
+    return;
+  }
+  const managers = data.managers;
+  let warning = '';
+  if(managers.length !== 14){
+    warning = `<div class="error">This league has ${managers.length} entries — the bracket is built for exactly 14. Showing the top 14 by qualifying points.</div>`;
+  }
+  const qualified = computeQualifying(managers).slice(0,14);
+  const rounds = buildBracket(qualified);
+  const final = rounds[rounds.length-1];
+  const championMatch = final.matches[0];
+  const cur = currentGw();
+
+  let html = warning;
+
+  html += `<div class="statusbar">
+    <span>Current gameweek: ${cur ?? '—'}</span>
+    <span class="refresh">Last updated: ${fmtTime(data.fetchedAt)}
+      <button class="btn secondary" id="refreshBtn" style="margin-top:0;padding:6px 12px;">Refresh</button>
+    </span>
+  </div>`;
+
+  if(championMatch && championMatch.decided && championMatch.winner && !championMatch.winner.isBye){
+    html += `<div class="champion-banner">
+      <div class="trophy">&#127942;</div>
+      <div class="ctext">
+        <div class="clabel">${config[key].name} champion</div>
+        <div class="cname">${championMatch.winner.name}</div>
+      </div>
+    </div>`;
+  }
+
+  const qualDone = QUAL_GWS.every(g => isGwFinished(g));
+  html += `<div class="qual">
+    <div class="section-title">Qualifying — GW1&ndash;3</div>
+    <div class="qual-note">${qualDone ? 'Seeding is locked.' : 'GW1–3 still in progress — seeding below is live and may change.'}</div>
+    <table class="qtable">
+      <tr><th>Seed</th><th>Manager</th><th>Team</th><th>Points</th></tr>
+      ${qualified.map((m,i)=>`<tr><td><span class="seed-num">${i+1}</span></td><td>${m.name}</td><td>${m.team}</td><td>${m.qualTotal}</td></tr>`).join('')}
+    </table>
+  </div>`;
+
+  html += `<div class="section-title">Bracket</div>
+  <div class="bracket-scroll"><div class="bracket">`;
+  rounds.forEach(r => {
+    const finished = isGwFinished(r.gw);
+    const status = finished ? 'Decided' : (cur !== null && r.gw <= cur ? 'Live' : 'Upcoming');
+    html += `<div class="round-col">
+      <div class="round-head">
+        <div class="rname">${r.label}</div>
+        <div class="rstatus ${status==='Live'?'live':''}">GW${r.gw} &middot; ${status}</div>
+      </div>
+      <div class="matches">
+        ${r.matches.map(m => `<div class="match ${m.decided?'decided':''}">
+          ${renderPersonRow(m.pA, m, 'A')}
+          ${renderPersonRow(m.pB, m, 'B')}
+        </div>`).join('')}
+      </div>
+    </div>`;
+  });
+  html += `</div></div>`;
+
+  container.innerHTML = html;
+  document.getElementById('refreshBtn').addEventListener('click', async () => {
+    container.innerHTML = `<div class="empty"><strong>Refreshing…</strong></div>`;
+    cache[key] = await safeLoad(key, true);
+    render();
+  });
+}
+
+async function safeLoad(key, force){
+  try{
+    return await loadLeague(key, force);
+  }catch(e){
+    return { error: e.message };
+  }
+}
+
+function render(){
+  document.getElementById('tabA').classList.toggle('active', activeLeague==='A');
+  document.getElementById('tabB').classList.toggle('active', activeLeague==='B');
+  const container = document.getElementById('content');
+  renderLeague(container, activeLeague);
+}
+
+async function init(){
+  await loadConfig();
+  document.getElementById('gearBtn').addEventListener('click', () => {
+    document.getElementById('drawer').classList.toggle('open');
+  });
+  document.getElementById('closeBtn').addEventListener('click', () => {
+    document.getElementById('drawer').classList.remove('open');
+  });
+  document.getElementById('saveBtn').addEventListener('click', saveConfig);
+  document.getElementById('tabA').addEventListener('click', () => { activeLeague='A'; render(); ensureLoaded('A'); });
+  document.getElementById('tabB').addEventListener('click', () => { activeLeague='B'; render(); ensureLoaded('B'); });
+
+  render();
+  ensureLoaded(activeLeague);
+}
+
+async function ensureLoaded(key){
+  if(!config[key].id) return;
+  if(cache[key]) return;
+  cache[key] = await safeLoad(key, false);
+  if(activeLeague === key) render();
+}
+
+init();
+</script>
+</body>
+</html>
